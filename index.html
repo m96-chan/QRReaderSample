@@ -1,0 +1,46 @@
+<html lang="ja">
+<head>
+    <title>QRCodeReader</title>
+    <script src="node_modules/jsqr/dist/jsQR.js"></script>
+</head>
+<body>
+<div>
+    <video id="web-camera" class="reader-video" autoplay playsinline></video>
+</div>
+<div style="display: none">
+    <canvas id="web-camera-canvas"></canvas>
+</div>
+<script>
+    // videoの設定をするのです。
+    const video = document.querySelector("#web-camera");
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: true
+    }).then(
+        (s) => {
+            video.srcObject = s;
+            video.onloadedmetadata = (_) => video.play();
+        }
+    ).catch(
+        (e) => console.error(e)
+    )
+    // canvasに画像を流し込む
+    const canvas = document.querySelector("#web-camera-canvas");
+    const ctx = canvas.getContext("2d");
+    const checkQRCode = () => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const code = jsQR(imageData.data, canvas.width, canvas.height)
+
+        if (code) {
+            if(!alert(code.data)){
+                checkQRCode();
+            }
+        } else {
+            setTimeout(() => { checkQRCode() }, 200)
+        }
+    }
+    checkQRCode();
+</script>
+</body>
+</html>
