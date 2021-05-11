@@ -4,11 +4,14 @@
     <script src="node_modules/jsqr/dist/jsQR.js"></script>
 </head>
 <body>
-<div>
+<div style="display: none">
     <video id="web-camera" class="reader-video" autoplay playsinline></video>
 </div>
-<div style="display: none">
-    <canvas id="web-camera-canvas"></canvas>
+<div>
+    <canvas id="web-camera-canvas" style="width: 100%"></canvas>
+</div>
+<div>
+
 </div>
 <script>
     // videoの設定をするのです。
@@ -27,14 +30,31 @@
     // canvasに画像を流し込む
     const canvas = document.querySelector("#web-camera-canvas");
     const ctx = canvas.getContext("2d");
+
+    const drawCodeRect = (code) => {
+        // 検出したQRを赤で囲む機能
+        ctx.beginPath();
+        ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+        ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
+        ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
+        ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
+        ctx.lineTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth  = 3;
+        ctx.stroke();
+    }
+
     const checkQRCode = () => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code) {
-            if(!alert(code.data)){
-                setTimeout(() => { checkQRCode() }, 200);
-            }
+            drawCodeRect(code);
+            setTimeout(() => {
+                if(!alert(code.data)){
+                    setTimeout(() => { checkQRCode() }, 200);
+                }
+            }, 100);
         } else {
             setTimeout(() => { checkQRCode() }, 200);
         }
