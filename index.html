@@ -2,6 +2,7 @@
 <head>
     <title>QRCodeReader</title>
     <script src="node_modules/jsqr/dist/jsQR.js"></script>
+    <script src="node_modules/qrcode/build/qrcode.js"></script>
 </head>
 <body>
 <div style="display: none">
@@ -11,7 +12,7 @@
     <canvas id="web-camera-canvas" style="width: 100%"></canvas>
 </div>
 <div>
-
+    <canvas id="reverse-qr" width="240" height="240"></canvas>
 </div>
 <script>
     // videoの設定をするのです。
@@ -44,22 +45,36 @@
         ctx.stroke();
     }
 
+    const drawQRCode = (code) => {
+        const canvas = document.querySelector("#reverse-qr");
+        return new Promise((res, rej) => QRCode.toCanvas(canvas, code.data, {}, e => !e ? res(canvas): rej(e)));
+    }
+
     const checkQRCode = () => {
+        // ぶっちゃけ、実際に存在するキャンバスに実装してるけど
+        // canvas = new OffscreenCanvas(240, 320);
+        // これでもいける。
+        // ビデオタグのオーバーレイがめんどかったってのはあるけど
+        // ビデオタグの問題として、再生停止ボタンがでる問題があって、Canvasなら発生しない。
+
+        const refreshRate = 100
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code) {
             drawCodeRect(code);
+            drawQRCode(code);
             setTimeout(() => {
                 if(!alert(code.data)){
-                    setTimeout(() => { checkQRCode() }, 200);
+                    setTimeout(() => { checkQRCode() }, refreshRate);
                 }
             }, 100);
         } else {
-            setTimeout(() => { checkQRCode() }, 200);
+            setTimeout(() => { checkQRCode() }, refreshRate);
         }
     }
     checkQRCode();
+
 </script>
 </body>
 </html>
