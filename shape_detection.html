@@ -1,0 +1,87 @@
+<html lang="ja">
+<head>
+    <title>Shape Detection API Sample</title>
+    <script src="https://docs.opencv.org/3.4.1/opencv.js"></script>
+</head>
+<body>
+<div>
+    <video id="web-camera" autoplay muted playsinline></video>
+</div>
+<div style="display: none">
+    <canvas id="web-camera-buff"
+            width="1280"
+            height="720"
+            style="width: 1280px; height: 720px"></canvas>
+</div>
+<div>
+    <canvas id="web-camera-canvas"
+            width="1280"
+            height="720"
+            style="width: 1280px; height: 720px"></canvas>
+</div>
+<script>
+    const video = document.querySelector("#web-camera");
+
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+            width: 1280,
+            height: 720
+        }
+    }).then(
+        (s) => {
+            video.srcObject = s;
+            video.onloadedmetadata = _ => video.play().then(_ => {
+                initializeDetector();
+            });
+        }
+    ).catch(e => {
+        console.error(e);
+    })
+
+    const initializeDetector = () => {
+        const barcodeDetector = new BarcodeDetector();
+        // video直とり版
+        // setInterval(() => {
+        //     barcodeDetector.detect(video).then(barcodes => {
+        //         for(b of barcodes) {
+        //             console.log(b);
+        //         }
+        //     }).catch(e => console.error(e))
+        // });
+
+        // canvasに画像を流し込む
+        const src = document.querySelector("#web-camera-buff");
+        const ctx = src.getContext("2d");
+        const canvas = document.querySelector("#web-camera-canvas");
+
+        setInterval(() => {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            unSharpMasking(src, canvas);
+            barcodeDetector.detect(canvas).then(barcodes => {
+                for(b of barcodes) {
+                    console.log(b);
+                }
+            }).catch(e => console.error(e))
+        }, 100);
+    }
+
+    const unSharpMasking = (srcCanvas, distCanvas) =>  {
+        const src = cv.imread(srcCanvas);
+        const dst = new cv.Mat();
+        const kernel = cv.matFromArray(3, 3, cv.CV_32FC1, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
+        const anchor = new cv.Point(-1, -1);
+        cv.cvtColor(src, dst, cv.COLOR_RGB2GRAY);
+        // 2値化して、バーコードハイライトしたかった。
+        cv.threshold(dst, dst, 126, 255, cv.THRESH_BINARY);
+        cv.filter2D(dst, dst, cv.CV_8U, kernel, anchor, 0, cv.BORDER_DEFAULT);
+
+        cv.imshow(distCanvas, dst);
+        // 消さないとえらいことになる。
+        src.delete();
+        dst.delete();
+        kernel.delete();
+    }
+</script>
+</body>
+</html>
